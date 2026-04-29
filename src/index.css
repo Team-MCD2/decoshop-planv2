@@ -1167,6 +1167,39 @@ input { font-family: inherit; }
 }
 
 /* ═══════════════════════════════════════════════════════════════ */
+/* TOAST (Sprint E follow-up — confirmation pill)                  */
+/* ═══════════════════════════════════════════════════════════════ */
+/* Single global toast slot. Pinned bottom-center, gold-on-navy to
+   match the dim-badge brand. pointer-events:none so it never
+   intercepts a click on whatever is underneath. */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  z-index: 1000;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  user-select: none;
+  animation: toast-in 0.22s ease-out;
+}
+
+@keyframes toast-in {
+  from { transform: translate(-50%, 16px); opacity: 0; }
+  to   { transform: translate(-50%, 0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
 /* DIMENSION BADGE (Sprint E.2 — live W×H during drag/resize)      */
 /* ═══════════════════════════════════════════════════════════════ */
 /* Pinned in floor-plan space, NOT inside the rotated section, so the

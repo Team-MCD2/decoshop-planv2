@@ -8,6 +8,7 @@ import ShelfDetail from './components/ShelfDetail';
 import StructurePanel from './components/StructurePanel';
 import OnboardingHint from './components/OnboardingHint';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/Toast';
 
 function AppContent() {
   const { state, dispatch } = useStore();
@@ -67,9 +68,11 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <StoreProvider>
-        <AppContent />
-      </StoreProvider>
+      <ToastProvider>
+        <StoreProvider>
+          <AppContent />
+        </StoreProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

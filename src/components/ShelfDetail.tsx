@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useStore } from '../hooks/useStore';
+import { useToast } from '../hooks/useToast';
 import { SECTION_PRODUCTS } from '../data/storeLayout';
 import { generateId } from '../lib/ids';
 import type { Item } from '../types/domain';
 
 export default function ShelfDetail() {
   const { state, dispatch, selectedSection } = useStore();
+  const { showToast } = useToast();
   const [customName, setCustomName] = useState('');
 
   // Resolve the targets up-front. They may be null until the user has
@@ -75,7 +77,15 @@ export default function ShelfDetail() {
 
   const moveProduct = (itemId: string, toShelfId: string | null): void => {
     if (!sectionId || !toShelfId) return;
+    // Look up the item title and target shelf height BEFORE dispatching so
+    // the toast reads naturally even though the source shelf will lose the
+    // item right after dispatch.
+    const item = shelf.items.find((it) => it.id === itemId);
+    const target = sortedShelves.find((s) => s.id === toShelfId);
     dispatch({ type: 'MOVE_PRODUCT', sectionId, itemId, toShelfId });
+    if (item && target) {
+      showToast(`« ${item.title} » déplacé vers étagère ${target.hauteur_cm} cm`);
+    }
   };
 
   return (

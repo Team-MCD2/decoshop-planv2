@@ -233,7 +233,10 @@ export async function migrateLocalStorageToDb(): Promise<MigrationResult> {
     sections: Array.isArray(parsed.sections) ? parsed.sections : [],
     zones: Array.isArray(parsed.zones) ? parsed.zones : [],
   });
-  if (!result.ok) return result;
+  // Rebuild the failure result explicitly: SaveLayoutResult and
+  // MigrationResult share the same { ok: false; error } shape but are
+  // structurally distinct types, so a direct return is rejected by TS.
+  if (!result.ok) return { ok: false, error: result.error };
 
   // Only flag as migrated AFTER a successful save — otherwise a transient
   // network failure would skip the migration permanently on the next boot.

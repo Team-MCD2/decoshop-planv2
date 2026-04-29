@@ -96,8 +96,15 @@ export default function FloorPlan() {
         }
 
         if (dragType === 'move') {
-          const nx = Math.round((origX + dx) * 10) / 10;
-          const ny = Math.round((origY + dy) * 10) / 10;
+          // E — soft-clamp inside the store walls so a careless fling
+          // can't park a section off-canvas. Width/height never change
+          // during a move, so the clamp range is just [0, STORE − size].
+          let nx = origX + dx;
+          let ny = origY + dy;
+          nx = Math.max(0, Math.min(STORE.width - origW, nx));
+          ny = Math.max(0, Math.min(STORE.height - origH, ny));
+          nx = Math.round(nx * 10) / 10;
+          ny = Math.round(ny * 10) / 10;
           if (kind === 'section') dispatch({ type: 'UPDATE_SECTION', id, updates: { x: nx, y: ny } });
           else dispatch({ type: 'MOVE_ZONE', id, x: nx, y: ny });
           return;
@@ -143,6 +150,16 @@ export default function FloorPlan() {
           ny = origY + (origH - nh) / 2;
         }
 
+        // E — soft-clamp into the store walls. If the section would
+        // overshoot a wall, shrink the dimension by the overshoot so the
+        // wall stops the resize cleanly (no deformation, no drift).
+        if (nx < 0) { nw = nw + nx; nx = 0; }
+        if (ny < 0) { nh = nh + ny; ny = 0; }
+        if (nx + nw > STORE.width)  nw = STORE.width  - nx;
+        if (ny + nh > STORE.height) nh = STORE.height - ny;
+        nw = Math.max(0.5, nw);
+        nh = Math.max(0.5, nh);
+
         nx = Math.round(nx * 10) / 10;
         ny = Math.round(ny * 10) / 10;
         nw = Math.round(nw * 10) / 10;
@@ -151,19 +168,45 @@ export default function FloorPlan() {
         if (kind === 'section') dispatch({ type: 'UPDATE_SECTION', id, updates: { x: nx, y: ny, w: nw, h: nh } });
       };
 
-      const onUp = () => {
+      // All gesture-end paths route through `cleanup()` so the listeners
+      // and ref/state are torn down in one place no matter how the drag
+      // ends (release, cancel, Escape).
+      const cleanup = () => {
         dragRef.current = null;
         setDragInfo(null);
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
+        window.removeEventListener('keydown', onKey);
       };
+      const onUp = () => cleanup();
+
+      // D — Escape during a drag/resize/rotate reverts the section to its
+      // pre-drag geometry (Figma/Word convention). Zones revert position
+      // only, since `MOVE_ZONE` is the only zone-mutating action wired up.
+      const onKey = (ev: KeyboardEvent) => {
+        if (ev.key !== 'Escape' || !dragRef.current) return;
+        ev.preventDefault();
+        const { id, origX, origY, origW = 1, origH = 1, origRot = 0 } = dragRef.current;
+        if (kind === 'section') {
+          dispatch({
+            type: 'UPDATE_SECTION',
+            id,
+            updates: { x: origX, y: origY, w: origW, h: origH, rotation: origRot },
+          });
+        } else {
+          dispatch({ type: 'MOVE_ZONE', id, x: origX, y: origY });
+        }
+        cleanup();
+      };
+
       // Pointer Events unify mouse, touch and pen input. `pointercancel`
       // fires if the OS pre-empts the gesture (e.g. system swipe) — we
       // treat it like pointerup to release the drag cleanly.
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onUp);
+      window.addEventListener('keydown', onKey);
     };
 
   /* ── Click (inventory mode → drill down) ───────── */
