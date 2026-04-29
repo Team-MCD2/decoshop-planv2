@@ -5,6 +5,7 @@
  */
 
 import type { Section, Shelf, Store, Zone } from '../types/domain';
+import { generateId } from '../lib/ids';
 
 /* ═══════════════════════════════════════════════════════════════ */
 /* STORE DIMENSIONS (metres)                                      */
@@ -24,7 +25,13 @@ export const SCALE = 70; // px per metre
 /* SHELF BUILDER                                                   */
 /* ═══════════════════════════════════════════════════════════════ */
 
-const DEFAULT_SHELF_CAPACITY = 12;
+/* Shared constants used by the shelf-management UI (Sprint D.3). */
+export const DEFAULT_SHELF_CAPACITY = 12;
+export const MAX_SHELF_HEIGHT_CM = 220;
+export const MIN_SHELF_HEIGHT_CM = 0;
+export const MIN_SHELF_CAPACITY = 1;
+export const MAX_SHELF_CAPACITY = 50;
+export const MAX_SHELVES_PER_SECTION = 12;
 
 export function buildShelves(sectionId: string, heights: number[]): Shelf[] {
   return heights.map((h, i) => ({
@@ -34,6 +41,30 @@ export function buildShelves(sectionId: string, heights: number[]): Shelf[] {
     capacite: DEFAULT_SHELF_CAPACITY,
     items: [],
   }));
+}
+
+/**
+ * Build a fresh `Shelf` with sensible defaults for a section.
+ *
+ * Picks a height 40 cm above the tallest existing shelf (or 0 cm if the
+ * section is empty), clamped to [0, 220] cm. Index is the next slot. ID
+ * uses the project-wide `generateId('shelf')` so it can't collide across
+ * runtime sessions.
+ *
+ * Caller is responsible for checking `MAX_SHELVES_PER_SECTION` before
+ * dispatching `ADD_SHELF` (the reducer doesn't enforce that limit).
+ */
+export function createDefaultShelf(section: Section): Shelf {
+  const heights = section.shelves.map((s) => s.hauteur_cm);
+  const tallest = heights.length > 0 ? Math.max(...heights) : -40;
+  const suggested = Math.min(MAX_SHELF_HEIGHT_CM - 10, Math.max(0, tallest + 40));
+  return {
+    id: generateId('shelf'),
+    index: section.shelves.length,
+    hauteur_cm: suggested,
+    capacite: DEFAULT_SHELF_CAPACITY,
+    items: [],
+  };
 }
 
 /* ═══════════════════════════════════════════════════════════════ */

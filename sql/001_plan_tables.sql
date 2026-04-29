@@ -6,10 +6,22 @@
 --  the existing `public.articles` table or any other existing structure.
 --
 --  ▸ IDEMPOTENT: Safe to run multiple times (IF NOT EXISTS everywhere).
---  ▸ ADDITIVE: No ALTER/DROP on existing tables.
+--  ▸ ADDITIVE:   No ALTER/DROP on existing tables.
 --  ▸ FOREIGN KEYS: `plan_shelf_items.article_id` optionally references
---    `public.articles(id)` to link floor-plan placements to real inventory.
+--                  `public.articles(id)` to link placements to real inventory.
 --
+-- ─── Threat model (read before re-tightening RLS) ───────────────────────────
+--  The SPA at `decoshop-plan-v2` is a public-facing editor that uses the
+--  anon key (no Supabase Auth). To save layouts at all, the RLS policies
+--  below grant the `anon` role full CRUD on the four `plan_*` tables.
+--
+--  This is acceptable IFF the editor's URL is gated by infra-level access
+--  control (Vercel password protection, IP allowlist, SSO front-door, ...).
+--  Otherwise anyone with the URL + the anon key can wipe the floor plan.
+--
+--  To upgrade to authenticated-only later, swap `anon` for `authenticated`
+--  in the four `create policy` statements below — no client code changes
+--  needed once the Supabase Auth flow lands.
 -- ════════════════════════════════════════════════════════════════════════════
 
 
@@ -120,34 +132,52 @@ create index if not exists idx_plan_shelf_items_article on public.plan_shelf_ite
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 5. Row Level Security — match existing articles pattern (deny all for anon)
+-- 5. Row Level Security — anon gets full CRUD (see threat model in header)
 -- ─────────────────────────────────────────────────────────────────────────────
 alter table public.plan_sections    enable row level security;
 alter table public.plan_zones       enable row level security;
 alter table public.plan_shelves     enable row level security;
 alter table public.plan_shelf_items enable row level security;
 
--- Allow authenticated users (service role or logged-in) full access:
+-- ─── SPA-friendly policies: full CRUD for `anon` (the SPA's role). ───
+-- Drop legacy 'all_auth' policies if they exist (from earlier migration runs)
+-- so re-running this script flips the gate cleanly.
 do $$
 begin
   -- plan_sections
-  if not exists (select 1 from pg_policies where policyname = 'plan_sections_all_auth' and tablename = 'plan_sections') then
-    create policy plan_sections_all_auth on public.plan_sections for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  if exists (select 1 from pg_policies where policyname = 'plan_sections_all_auth' and tablename = 'plan_sections') then
+    drop policy plan_sections_all_auth on public.plan_sections;
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'plan_sections_anon_all' and tablename = 'plan_sections') then
+    create policy plan_sections_anon_all on public.plan_sections
+      for all to anon, authenticated using (true) with check (true);
   end if;
 
   -- plan_zones
-  if not exists (select 1 from pg_policies where policyname = 'plan_zones_all_auth' and tablename = 'plan_zones') then
-    create policy plan_zones_all_auth on public.plan_zones for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  if exists (select 1 from pg_policies where policyname = 'plan_zones_all_auth' and tablename = 'plan_zones') then
+    drop policy plan_zones_all_auth on public.plan_zones;
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'plan_zones_anon_all' and tablename = 'plan_zones') then
+    create policy plan_zones_anon_all on public.plan_zones
+      for all to anon, authenticated using (true) with check (true);
   end if;
 
   -- plan_shelves
-  if not exists (select 1 from pg_policies where policyname = 'plan_shelves_all_auth' and tablename = 'plan_shelves') then
-    create policy plan_shelves_all_auth on public.plan_shelves for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  if exists (select 1 from pg_policies where policyname = 'plan_shelves_all_auth' and tablename = 'plan_shelves') then
+    drop policy plan_shelves_all_auth on public.plan_shelves;
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'plan_shelves_anon_all' and tablename = 'plan_shelves') then
+    create policy plan_shelves_anon_all on public.plan_shelves
+      for all to anon, authenticated using (true) with check (true);
   end if;
 
   -- plan_shelf_items
-  if not exists (select 1 from pg_policies where policyname = 'plan_shelf_items_all_auth' and tablename = 'plan_shelf_items') then
-    create policy plan_shelf_items_all_auth on public.plan_shelf_items for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  if exists (select 1 from pg_policies where policyname = 'plan_shelf_items_all_auth' and tablename = 'plan_shelf_items') then
+    drop policy plan_shelf_items_all_auth on public.plan_shelf_items;
+  end if;
+  if not exists (select 1 from pg_policies where policyname = 'plan_shelf_items_anon_all' and tablename = 'plan_shelf_items') then
+    create policy plan_shelf_items_anon_all on public.plan_shelf_items
+      for all to anon, authenticated using (true) with check (true);
   end if;
 end $$;
 

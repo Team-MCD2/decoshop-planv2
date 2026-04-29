@@ -147,6 +147,151 @@ input { font-family: inherit; }
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* ═══════════════════════════════════════════════════════════════ */
+/* ERROR BOUNDARY FALLBACK                                         */
+/* ═══════════════════════════════════════════════════════════════ */
+.error-boundary {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg);
+  z-index: 9999;
+}
+
+.error-boundary__card {
+  max-width: 480px;
+  width: 100%;
+  padding: 32px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.error-boundary__icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-boundary__title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  background: linear-gradient(135deg, var(--text), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.error-boundary__message {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.error-boundary__reload {
+  padding: 10px 24px;
+  background: var(--gold);
+  color: var(--navy);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.error-boundary__reload:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.error-boundary__details {
+  margin-top: 24px;
+  text-align: left;
+}
+
+.error-boundary__details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.error-boundary__stack {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-family: 'JetBrains Mono', monospace, ui-monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  overflow: auto;
+  max-height: 240px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* SYNC STATUS PILL (top-right, reflects DB sync state)            */
+/* ═══════════════════════════════════════════════════════════════ */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+  user-select: none;
+  cursor: help;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.sync-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+/* Color variants — each variant sets `currentColor` so the box-shadow
+   pulse (used while saving) inherits the dot color automatically. */
+.sync-status__dot--green  { background: #22C55E; color: #22C55E; }
+.sync-status__dot--blue   { background: #3B82F6; color: #3B82F6; animation: sync-pulse 1.4s ease-in-out infinite; }
+.sync-status__dot--yellow { background: #FACC15; color: #FACC15; animation: sync-pulse 1.4s ease-in-out infinite; }
+.sync-status__dot--red    { background: #EF4444; color: #EF4444; }
+.sync-status__dot--grey   { background: var(--text-muted); color: var(--text-muted); }
+
+/* Subtle radial pulse while a save / connect is in flight. */
+@keyframes sync-pulse {
+  0%   { box-shadow: 0 0 0 0   currentColor; opacity: 1;   }
+  70%  { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); opacity: 0.85; }
+  100% { box-shadow: 0 0 0 0   rgba(0, 0, 0, 0); opacity: 1;   }
+}
+
+/* Hide the text on narrow screens — the dot + tooltip are enough. */
+@media (max-width: 640px) {
+  .sync-status__text { display: none; }
+  .sync-status { padding: 6px; }
+}
+
 .mode-toggle__btn--active {
   background: var(--gold-muted);
   color: var(--gold);
@@ -241,6 +386,9 @@ input { font-family: inherit; }
 
 .section-block--draggable {
   cursor: grab;
+  /* Prevents the browser from hijacking touch-drag for scroll/zoom —
+     required for the Pointer Events drag gesture to fire on tablets. */
+  touch-action: none;
 }
 .section-block--draggable:active {
   cursor: grabbing;
@@ -342,6 +490,61 @@ input { font-family: inherit; }
 .breadcrumb__sep {
   color: var(--text-muted);
   font-size: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* ONBOARDING HINT (first-visit banner)                            */
+/* ═══════════════════════════════════════════════════════════════ */
+.onboarding-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 24px 0;
+  padding: 12px 16px;
+  background: linear-gradient(
+    90deg,
+    rgba(250, 204, 21, 0.10),
+    rgba(250, 204, 21, 0.04)
+  );
+  border: 1px solid rgba(250, 204, 21, 0.30);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  animation: hint-slide-down 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes hint-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-hint__icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.onboarding-hint__text { flex: 1; }
+
+.onboarding-hint__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background var(--transition), color var(--transition);
+}
+
+.onboarding-hint__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
 }
 
 /* ═══════════════════════════════════════════════════════════════ */
@@ -553,6 +756,114 @@ input { font-family: inherit; }
   color: var(--red);
 }
 
+/* Quantity stepper inside a product row. */
+.product-item__qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.product-item__qty-btn {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+
+.product-item__qty-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.product-item__qty-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.product-item__qty-input {
+  width: 36px;
+  height: 22px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.product-item__qty-input:focus {
+  background: rgba(250, 204, 21, 0.08);
+  color: var(--gold);
+}
+
+/* Hide the native spinners — our explicit +/− buttons replace them. */
+.product-item__qty-input::-webkit-outer-spin-button,
+.product-item__qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.product-item__qty-input { -moz-appearance: textfield; appearance: textfield; }
+
+/* Move-between-shelves button group (Sprint E.5). Same visual language
+   as the qty stepper so the row reads as a coherent set of controls. */
+.product-item__move {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.product-item__move-btn {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+
+.product-item__move-btn + .product-item__move-btn {
+  border-left: 1px solid var(--border);
+}
+
+.product-item__move-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.product-item__move-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ═══════════════════════════════════════════════════════════════ */
 /* ADD PRODUCT FORM                                                */
 /* ═══════════════════════════════════════════════════════════════ */
@@ -635,6 +946,24 @@ input { font-family: inherit; }
 
 .add-product__submit:hover {
   background: rgba(250, 204, 21, 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* FORM GROUP (Structure Panel)                                    */
+/* ═══════════════════════════════════════════════════════════════ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ═══════════════════════════════════════════════════════════════ */
@@ -738,22 +1067,221 @@ input { font-family: inherit; }
   margin-bottom: 12px;
 }
 
+/* Variant: label on the left + small action button (e.g. ✎ Édition) on right. */
+.section-label--with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-label__toggle {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.section-label__toggle:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.section-label__toggle--active {
+  background: rgba(250, 204, 21, 0.15);
+  border-color: rgba(250, 204, 21, 0.45);
+  color: var(--gold);
+}
+
+.section-label__toggle--active:hover {
+  background: rgba(250, 204, 21, 0.22);
+}
+
+/* Shelf row in edit mode: no hover-lift, inline form fields. */
+.shelf-row--editing {
+  cursor: default;
+  border-color: rgba(250, 204, 21, 0.25);
+  background: rgba(250, 204, 21, 0.04);
+}
+
+.shelf-row--editing:hover {
+  background: rgba(250, 204, 21, 0.04);
+  transform: none;
+}
+
+.shelf-row__edit-fields {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.shelf-row__edit-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.shelf-row__edit-input {
+  width: 56px;
+  height: 24px;
+  padding: 0 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.shelf-row__edit-input:focus {
+  border-color: var(--gold);
+}
+
+.shelf-row__edit-input::-webkit-outer-spin-button,
+.shelf-row__edit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.shelf-row__edit-input { -moz-appearance: textfield; appearance: textfield; }
+
+.shelf-row__edit-unit {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* DIMENSION BADGE (Sprint E.2 — live W×H during drag/resize)      */
+/* ═══════════════════════════════════════════════════════════════ */
+/* Pinned in floor-plan space, NOT inside the rotated section, so the
+   badge stays axis-aligned even when the section is rotated. */
+.dim-badge {
+  position: absolute;
+  z-index: 30;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Little downward tail so it reads as "above this thing". */
+.dim-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: var(--gold);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 1px;
+  z-index: -1;
+}
+
 /* ═══════════════════════════════════════════════════════════════ */
 /* RESIZE HANDLES (structure mode)                                 */
 /* ═══════════════════════════════════════════════════════════════ */
+/* Resize handle base — Word/Figma feel. Corners are 12×12 squares with a
+   gold ring; edges are thinner pills running along the edge. The high
+   z-index puts them above the section's text, and the drop shadow keeps
+   them readable against any section color (gold ↔ red ↔ teal etc.). */
 .resize-handle {
   position: absolute;
   z-index: 20;
-  background: var(--green);
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
-  border-radius: 2px;
-  transition: transform 0.15s;
+  background: #FFFFFF;
+  border: 2px solid var(--gold);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+  /* Same touch-action requirement as draggable section blocks (see above). */
+  touch-action: none;
 }
-.resize-handle:hover { transform: scale(1.3); background: #16A34A; }
-.resize-handle--se { bottom: -4px; right: -4px; width: 8px; height: 8px; cursor: se-resize; }
-.resize-handle--ne { top: -4px; right: -4px; width: 8px; height: 8px; cursor: ne-resize; }
-.resize-handle--sw { bottom: -4px; left: -4px; width: 8px; height: 8px; cursor: sw-resize; }
-.resize-handle--nw { top: -4px; left: -4px; width: 8px; height: 8px; cursor: nw-resize; }
+.resize-handle:hover {
+  background: var(--gold);
+  border-color: #FFFFFF;
+}
+
+/* Corners: 12×12 squares pinned to each corner. */
+.resize-handle--nw { top: -7px; left: -7px;   width: 12px; height: 12px; cursor: nw-resize; }
+.resize-handle--ne { top: -7px; right: -7px;  width: 12px; height: 12px; cursor: ne-resize; }
+.resize-handle--sw { bottom: -7px; left: -7px;  width: 12px; height: 12px; cursor: sw-resize; }
+.resize-handle--se { bottom: -7px; right: -7px; width: 12px; height: 12px; cursor: se-resize; }
+.resize-handle--nw:hover, .resize-handle--ne:hover,
+.resize-handle--sw:hover, .resize-handle--se:hover { transform: scale(1.18); }
+
+/* Edges: thin pills centered along each edge. Translate keeps them
+   centered while the dimension along the edge stays fixed. */
+.resize-handle--n {
+  top: -5px; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 8px; border-radius: 4px; cursor: n-resize;
+}
+.resize-handle--s {
+  bottom: -5px; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 8px; border-radius: 4px; cursor: s-resize;
+}
+.resize-handle--e {
+  top: 50%; right: -5px; transform: translateY(-50%);
+  width: 8px; height: 28px; border-radius: 4px; cursor: e-resize;
+}
+.resize-handle--w {
+  top: 50%; left: -5px; transform: translateY(-50%);
+  width: 8px; height: 28px; border-radius: 4px; cursor: w-resize;
+}
+.resize-handle--n:hover, .resize-handle--s:hover { transform: translateX(-50%) scaleY(1.4); }
+.resize-handle--e:hover, .resize-handle--w:hover { transform: translateY(-50%) scaleX(1.4); }
+
+/* Rotate handle: gold filled circle 24 px above the section, with a
+   curved-arrow glyph. Visually distinct from resize so the user reads
+   it as "rotation" not "resize". */
+.resize-handle--rotate {
+  top: -32px;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gold);
+  border-color: #FFFFFF;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  transform: translateX(-50%);
+}
+.resize-handle--rotate:hover {
+  background: #FFFFFF;
+  color: var(--gold);
+  border-color: var(--gold);
+  transform: translateX(-50%) scale(1.12);
+}
+.resize-handle--rotate:active { cursor: grabbing; }
 
 /* ═══════════════════════════════════════════════════════════════ */
 /* LOCK BADGE                                                      */

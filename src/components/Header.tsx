@@ -1,5 +1,6 @@
 import { useStore } from '../hooks/useStore';
 import type { AppMode } from '../types/domain';
+import SyncStatus from './SyncStatus';
 
 export default function Header() {
   const { state, dispatch } = useStore();
@@ -38,6 +39,8 @@ export default function Header() {
           Inventaire
         </button>
       </div>
+
+      <SyncStatus />
     </header>
   );
 }

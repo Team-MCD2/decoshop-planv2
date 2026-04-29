@@ -17,6 +17,7 @@ export interface Block {
   y: number;
   w: number;
   h: number;
+  rotation?: number;
   locked?: boolean;
 }
 
@@ -109,8 +110,14 @@ export type AppAction =
   | { type: 'DELETE_SECTION'; id: string }
   | { type: 'UPDATE_SECTION'; id: string; updates: Partial<Section> }
   | { type: 'MOVE_ZONE'; id: string; x: number; y: number }
+  | { type: 'ADD_SHELF'; sectionId: string; shelf: Shelf }
+  | { type: 'REMOVE_SHELF'; sectionId: string; shelfId: string }
+  | { type: 'UPDATE_SHELF'; sectionId: string; shelfId: string; updates: Partial<Shelf> }
   | { type: 'ADD_PRODUCT'; sectionId: string; shelfId: string; item: Item }
   | { type: 'REMOVE_PRODUCT'; sectionId: string; shelfId: string; itemId: string }
+  | { type: 'UPDATE_PRODUCT'; sectionId: string; shelfId: string; itemId: string; updates: Partial<Item> }
+  | { type: 'MOVE_PRODUCT'; sectionId: string; itemId: string; toShelfId: string }
   | { type: 'SET_ZOOM'; zoom: number }
+  | { type: 'ZOOM_BY'; delta: number }
   | { type: 'SET_PAN'; x: number; y: number }
   | { type: 'LOAD_STATE'; sections: Section[]; zones: Zone[] };

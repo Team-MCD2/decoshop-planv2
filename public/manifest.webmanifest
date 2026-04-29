@@ -1,0 +1,34 @@
+{
+  "name": "DecoShop Toulouse — Plan du magasin",
+  "short_name": "DecoShop Plan",
+  "description": "Plan interactif du magasin DecoShop Toulouse. Gérez la disposition des sections et l'inventaire des produits par étagère.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#1E3A8A",
+  "background_color": "#0B1020",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-32.png",
+      "type": "image/png",
+      "sizes": "32x32",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any maskable"
+    }
+  ]
+}
