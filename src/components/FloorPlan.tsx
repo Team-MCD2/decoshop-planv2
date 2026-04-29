@@ -26,20 +26,64 @@ export default function FloorPlan() {
   const w = STORE.width * SCALE;
   const h = STORE.height * SCALE;
 
+  // Auto-fit zoom — the floor plan should always fit the visible canvas on
+  // every device, every orientation, every viewport. Manual wheel/+/−
+  // gestures suspend auto-fit (userZoomedRef = true); the home button
+  // (⌘/〉) re-arms it. This decouples "how the plan looks at first" from
+  // "the user's chosen zoom" without juggling two zoom values in state.
+  const userZoomedRef = useRef(false);
+
+  // Compute the fit factor for a given canvas-area size. We subtract
+  // 24px on each axis (matching `.canvas-container` padding) and apply a
+  // 0.92 safety margin so the plan never kisses the edge.
+  const computeFit = (cw: number, ch: number): number => {
+    if (cw <= 0 || ch <= 0) return 1;
+    const usableW = Math.max(0, cw - 48);
+    const usableH = Math.max(0, ch - 48);
+    const fit = Math.min(usableW / w, usableH / h) * 0.92;
+    // Clamp into the same range the reducer uses so manual + auto values
+    // stay interchangeable.
+    return Math.max(0.4, Math.min(2.5, fit));
+  };
+
   // Native non-passive wheel listener — React's `onWheel` attaches a passive
   // listener so `e.preventDefault()` is a no-op. We need preventDefault to
   // stop the page from scrolling behind the canvas while the user zooms.
+  // Wheel-zooming counts as a manual override.
   useEffect(() => {
     const el = canvasAreaRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      userZoomedRef.current = true;
       // Sign: scroll up (negative deltaY) zooms in; scroll down zooms out.
       // Reducer clamps to [0.4, 2.5].
       dispatch({ type: 'ZOOM_BY', delta: -e.deltaY * 0.001 });
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
+  }, [dispatch]);
+
+  // ResizeObserver auto-fit. Fires on:
+  //   - mount (initial size)
+  //   - browser resize / orientation change
+  //   - panel open/close (canvas-area shrinks/grows)
+  // Skips when the user has manually zoomed.
+  useEffect(() => {
+    const el = canvasAreaRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      if (userZoomedRef.current) return;
+      const rect = entries[0]?.contentRect;
+      if (!rect) return;
+      const next = computeFit(rect.width, rect.height);
+      dispatch({ type: 'SET_ZOOM', zoom: next });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // `w` and `h` are module-scoped derived values — stable across renders.
+    // dispatch is stable; re-running on identity isn't needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   /* ── Drag, Resize, Rotate (structure mode only) ── */
@@ -358,12 +402,42 @@ export default function FloorPlan() {
         </div>
       </div>
 
-      {/* Zoom Controls */}
+      {/* Zoom Controls.
+          • +/− dispatches a relative zoom and marks the user as having taken
+            manual control — auto-fit is suspended after this.
+          • ⌂ (home) re-arms auto-fit and re-computes the fit factor from the
+            current canvas size, so it now reads as "Fit to screen". */}
       <div className="zoom-controls">
-        <button className="zoom-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_ZOOM', zoom: Math.min(2.5, state.zoom + 0.15) }); }}>+</button>
+        <button
+          className="zoom-btn"
+          aria-label="Zoom +"
+          onClick={(e) => {
+            e.stopPropagation();
+            userZoomedRef.current = true;
+            dispatch({ type: 'SET_ZOOM', zoom: Math.min(2.5, state.zoom + 0.15) });
+          }}
+        >+</button>
         <div className="zoom-level">{Math.round(state.zoom * 100)}%</div>
-        <button className="zoom-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_ZOOM', zoom: Math.max(0.4, state.zoom - 0.15) }); }}>−</button>
-        <button className="zoom-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_ZOOM', zoom: 1 }); }} title="Réinitialiser">⌂</button>
+        <button
+          className="zoom-btn"
+          aria-label="Zoom −"
+          onClick={(e) => {
+            e.stopPropagation();
+            userZoomedRef.current = true;
+            dispatch({ type: 'SET_ZOOM', zoom: Math.max(0.4, state.zoom - 0.15) });
+          }}
+        >−</button>
+        <button
+          className="zoom-btn"
+          title="Adapter à l'écran"
+          aria-label="Adapter à l'écran"
+          onClick={(e) => {
+            e.stopPropagation();
+            userZoomedRef.current = false;
+            const rect = canvasAreaRef.current?.getBoundingClientRect();
+            if (rect) dispatch({ type: 'SET_ZOOM', zoom: computeFit(rect.width, rect.height) });
+          }}
+        >⌂</button>
       </div>
     </div>
   );

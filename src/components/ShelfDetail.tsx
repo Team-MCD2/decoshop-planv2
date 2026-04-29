@@ -91,6 +91,13 @@ export default function ShelfDetail() {
   return (
     <div className="panel">
       <div className="panel__header">
+        <button
+          type="button"
+          className="panel__close"
+          aria-label="Fermer"
+          title="Fermer"
+          onClick={() => dispatch({ type: 'DRILL_BACK' })}
+        >✕</button>
         <div className="panel__title">
           <span style={{ color: selectedSection.color }}>●</span>
           {selectedSection.label} — Étagère {shelf.index + 1}
